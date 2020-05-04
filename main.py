@@ -17,7 +17,7 @@ username = ''
 password = ''
 # uid为用户id
 uid = ‘’
-# 此三项为签到参数，经纬度和真实姓名
+# 签到参数：经、纬度，真实姓名，ip，ua
 latitude = '-1'
 longitude = '-1'
 name = ''
@@ -43,7 +43,10 @@ CLASS_FOUR_START = time(15, 30)
 CLASS_FOUR_END = time(15, 46)
 
 
-# 通过登录获取cookie
+def myprint(string):
+    print(datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S') + '  ' + string)
+
+
 def getCookies():
     print('need new cookies,plz re-login')
     if username and password:
@@ -62,10 +65,9 @@ def getCookies():
                 file.write(cookie_str)
 
     else:
-        print('plz edit username and password in this python file')
+        myprint('plz edit username and password in this python file')
 
 
-# 加载cookie
 if os.path.exists(COOKIE_FILENAME):
     with open(COOKIE_FILENAME, 'r', encoding='utf-8') as f:
         data = f.read().strip()
@@ -101,7 +103,7 @@ def run_child():
             cdata = json.loads(res.content.decode('utf-8'))
 
             if cdata['result'] != 1:
-                print("课程列表获取失败")
+                myprint("课程列表获取失败")
                 return 0
             for item in cdata['channelList']:
                 if "course" not in item['content']:
@@ -111,7 +113,7 @@ def run_child():
                             'imageurl': item['content']['course']['data'][0]['imageurl'],
                             'classid': item['content']['id']}
                 coursedata.append(pushdata)
-            print("课程获取成功")
+            myprint("课程获取成功:\n")
             printCourseData()
 
         def printCourseData():
@@ -135,7 +137,7 @@ def run_child():
                     signurl = item['url']
                     aid = getVar(signurl)
                     if aid not in activates:
-                        print("查询到待签到活动 名称:%s 状态:%s 时间:%s aid:%s" % (
+                        myprint("查询到待签到活动 名称:%s 状态:%s 时间:%s aid:%s" % (
                             item['nameOne'], item['nameTwo'], item['nameFour'], aid))
                         sign(aid, uid, courseId)
 
@@ -151,16 +153,16 @@ def run_child():
             global status, activates
             url = 'https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=' + aid + '&uid=' + uid + '&clientip=' + clientip + '&useragent=' + signuseragent + '&latitude=' + latitude + '&longitude=' + longitude + '&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785&name=' + encode_name
             res = requests.get(url, headers=header)
+            course_name = ''
+            for item in coursedata:
+                if item['courseid'] == courseid:
+                    course_name = item['name']
             if res.text == "success":
-                course_name = ''
-                for item in coursedata:
-                    if item['courseid'] == courseid:
-                        course_name = item['name']
-                print(str(datetime.now()) + '  ' + course_name + ": 签到成功！")
+                myprint(course_name + ": 签到成功！")
                 activates.append(aid)
                 status = 2
             else:
-                print("签到失败：" + url)
+                myprint(course_name + "签到失败")
                 activates.append(aid)
 
         def startSign():
@@ -177,17 +179,17 @@ def run_child():
                         course = coursedata[course_index]
                         taskActiveList(course['courseid'], course['classid'])
                         course_index += 1
-                        print('正在监听: ' + str(course['name']))
+                        myprint('正在监听: ' + str(course['name']))
                         sleep(3.7)
                     sleep(random.randint(37, 88))
-            print("任务结束")
+            myprint("任务结束")
             printdata()
 
         backClassData()
 
 
 def run_parent():
-    print("主程序启动")
+    myprint("主程序启动")
 
     child_process = None
 
@@ -202,12 +204,12 @@ def run_parent():
             running = True
 
         if running and child_process is None:
-            print("监听开始\n")
+            myprint("监听开始\n")
             child_process = multiprocessing.Process(target=run_child)
             child_process.start()
 
         if not running and child_process is not None:
-            print("监听结束\n")
+            myprint("监听结束\n")
             child_process.terminate()
             child_process.join()
             child_process = None
