@@ -4,22 +4,29 @@ import random
 from datetime import datetime, time
 from time import sleep
 import os
-
+from urllib import parse
 import json
 import requests
 
-# debug为真，则全天运行本脚本，方便调试。
-# debug为假，则仅上课时运行
+# debug为真，则全天运行本脚本，方便调试。debug为假，则仅上课时运行
 debug = True
 
-# ！！！请填写下面三个参数
+# ！！！请填写下面8个参数
 # 填写用户名和密码，以便登录
 username = ''
 password = ''
-uid = ''
+# uid为用户id
+uid = ‘’
+# 此三项为签到参数，经纬度和真实姓名
+latitude = '-1'
+longitude = '-1'
+name = ''
+clientip = ''
+signuseragent = ''
 
 useragent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766'
 cookie = ''
+encode_name = parse.quote(name)
 COOKIE_FILENAME = 'chaoxing_cookies'
 
 # 第一节课
@@ -44,8 +51,9 @@ def getCookies():
         url = 'https://passport2-api.chaoxing.com/v11/loginregister'
         rdata = {'uname': username, 'code': password, }
         session = requests.session()
-        cookie_jar = session.post(url=url, data=rdata, headers={"User-Agent": useragent}).cookies
+        cookie_jar = session.post(url=url, data=rdata, headers={'User-Agent': useragent}).cookies
         cookie_dict = requests.utils.dict_from_cookiejar(cookie_jar)
+        print(cookie_dict)
         cookie_str = ''
         for key in cookie_dict:
             cookie_str += key + '=' + cookie_dict[key] + '; '
@@ -87,7 +95,7 @@ def run_child():
     while 1:
         def backClassData():
             global coursedata
-            url = "http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1"
+            url = 'http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1'
             res = requests.get(url, headers=header)
             if not res.status_code == 200:
                 getCookies()
@@ -99,11 +107,10 @@ def run_child():
             for item in cdata['channelList']:
                 if "course" not in item['content']:
                     continue
-                pushdata = {}
-                pushdata['courseid'] = item['content']['course']['data'][0]['id']
-                pushdata['name'] = item['content']['course']['data'][0]['name']
-                pushdata['imageurl'] = item['content']['course']['data'][0]['imageurl']
-                pushdata['classid'] = item['content']['id']
+                pushdata = {'courseid': item['content']['course']['data'][0]['id'],
+                            'name': item['content']['course']['data'][0]['name'],
+                            'imageurl': item['content']['course']['data'][0]['imageurl'],
+                            'classid': item['content']['id']}
                 coursedata.append(pushdata)
             print("课程获取成功")
             printCourseData()
@@ -118,7 +125,7 @@ def run_child():
 
         def taskActiveList(courseId, classId):
             global activeList
-            url = "https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=" + str(courseId) + "&classId=" + str(classId) + "&uid=" + uid
+            url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(courseId) + '&classId=' + str(classId) + '&uid=' + uid
             res = requests.get(url, headers=header)
             data = json.loads(res.text)
             activeList = data['activeList']
@@ -128,12 +135,10 @@ def run_child():
                 if item['activeType'] == 2 and item['status'] == 1:
                     signurl = item['url']
                     aid = getVar(signurl)
-                    if aid == 'notfound':
-                        print('getVar wrong')
                     if aid not in activates:
                         print("查询到待签到活动 名称:%s 状态:%s 时间:%s aid:%s" % (
                             item['nameOne'], item['nameTwo'], item['nameFour'], aid))
-                        sign(aid, uid)
+                        sign(aid, uid, courseId)
 
         def getVar(url):
             var1 = url.split("&")
@@ -143,12 +148,16 @@ def run_child():
                     return var2[1]
             return "notfound"
 
-        def sign(aid, uid):
+        def sign(aid, uid, courseid):
             global status, activates
-            url = "https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=" + aid + "&uid=" + uid + "&clientip=&useragent=&latitude=-1&longitude=-1&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785"
+            url = 'https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=' + aid + '&uid=' + uid + '&clientip=' + clientip + '&useragent=' + signuseragent + '&latitude=' + latitude + '&longitude=' + longitude + '&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785&name=' + encode_name
             res = requests.get(url, headers=header)
             if res.text == "success":
-                print("用户:" + uid + " 签到成功！")
+                course_name = ''
+                for item in coursedata:
+                    if item['courseid'] == courseid:
+                        course_name = item['name']
+                print(str(datetime.now()) + '  ' + course_name + ": 签到成功！")
                 activates.append(aid)
                 status = 2
             else:
@@ -204,7 +213,7 @@ def run_parent():
             child_process.join()
             child_process = None
 
-        sleep(5)
+        sleep(60)
 
 
 if __name__ == '__main__':
