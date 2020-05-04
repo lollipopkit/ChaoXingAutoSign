@@ -6,4 +6,5 @@
 修复了API错误的问题
 
 thanks to author 7z
+
 @Github LollipopKit MIT license
