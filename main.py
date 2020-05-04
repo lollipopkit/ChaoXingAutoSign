@@ -53,7 +53,6 @@ def getCookies():
         session = requests.session()
         cookie_jar = session.post(url=url, data=rdata, headers={'User-Agent': useragent}).cookies
         cookie_dict = requests.utils.dict_from_cookiejar(cookie_jar)
-        print(cookie_dict)
         cookie_str = ''
         for key in cookie_dict:
             cookie_str += key + '=' + cookie_dict[key] + '; '
