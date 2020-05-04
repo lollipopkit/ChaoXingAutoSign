@@ -46,7 +46,6 @@ def getCookies():
         session = requests.session()
         cookie_jar = session.post(url=url, data=rdata, headers={"User-Agent": useragent}).cookies
         cookie_dict = requests.utils.dict_from_cookiejar(cookie_jar)
-        print(cookie_dict)
         cookie_str = ''
         for key in cookie_dict:
             cookie_str += key + '=' + cookie_dict[key] + '; '
@@ -129,6 +128,8 @@ def run_child():
                 if item['activeType'] == 2 and item['status'] == 1:
                     signurl = item['url']
                     aid = getVar(signurl)
+                    if aid == 'notfound':
+                        print('getVar wrong')
                     if aid not in activates:
                         print("查询到待签到活动 名称:%s 状态:%s 时间:%s aid:%s" % (
                             item['nameOne'], item['nameTwo'], item['nameFour'], aid))
@@ -144,7 +145,7 @@ def run_child():
 
         def sign(aid, uid):
             global status, activates
-            url = "https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=" + aid + "&uid=" + uid + "&clientip=&useragent=&latitude=-1&longitude=-1&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785&name=%E5%86%AF%E5%B3%BB%E6%BA%90"
+            url = "https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=" + aid + "&uid=" + uid + "&clientip=&useragent=&latitude=-1&longitude=-1&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785"
             res = requests.get(url, headers=header)
             if res.text == "success":
                 print("用户:" + uid + " 签到成功！")
