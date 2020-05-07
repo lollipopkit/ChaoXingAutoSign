@@ -9,15 +9,15 @@ import json
 import requests
 
 # debug为真，则全天运行本脚本，方便调试。debug为假，则仅上课时运行
-debug = True
+debug = False
 
-# ！！！请填写下面8个参数
+# ！！！请填写下面6个参数
 # 填写用户名和密码，以便登录
 username = ''
 password = ''
 # uid为用户id
-uid = ‘’
-# 签到参数：经、纬度，真实姓名，ip，ua
+uid = ''
+# 此三项为签到参数，经纬度和真实姓名
 latitude = '-1'
 longitude = '-1'
 name = ''
@@ -48,7 +48,7 @@ def myprint(string):
 
 
 def getCookies():
-    print('need new cookies,plz re-login')
+    myprint('need new cookies, will re-login')
     if username and password:
         global cookie
         url = 'https://passport2-api.chaoxing.com/v11/loginregister'
@@ -87,34 +87,37 @@ status2 = 0
 activates = []
 
 header = {
-        "Cookie": cookie,
-        "User-Agent": useragent,
+    "Cookie": cookie,
+    "User-Agent": useragent,
 }
 
 
-def run_child():
+def signThread():
     while 1:
         def backClassData():
             global coursedata
+            cdata = {}
             url = 'http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1'
-            res = requests.get(url, headers=header)
-            if not res.status_code == 200:
-                getCookies()
-            cdata = json.loads(res.content.decode('utf-8'))
-
-            if cdata['result'] != 1:
-                myprint("课程列表获取失败")
-                return 0
-            for item in cdata['channelList']:
-                if "course" not in item['content']:
+            while not cdata:
+                res = requests.get(url, headers=header)
+                if not res.status_code == 200:
+                    getCookies()
                     continue
-                pushdata = {'courseid': item['content']['course']['data'][0]['id'],
-                            'name': item['content']['course']['data'][0]['name'],
-                            'imageurl': item['content']['course']['data'][0]['imageurl'],
-                            'classid': item['content']['id']}
-                coursedata.append(pushdata)
-            myprint("课程获取成功:\n")
-            printCourseData()
+                cdata = json.loads(res.content.decode('utf-8'))
+
+                if cdata['result'] != 1:
+                    myprint("课程列表获取失败")
+                    return 0
+                for item in cdata['channelList']:
+                    if "course" not in item['content']:
+                        continue
+                    pushdata = {'courseid': item['content']['course']['data'][0]['id'],
+                                'name': item['content']['course']['data'][0]['name'],
+                                'imageurl': item['content']['course']['data'][0]['imageurl'],
+                                'classid': item['content']['id']}
+                    coursedata.append(pushdata)
+                myprint("课程获取成功\n")
+                printCourseData()
 
         def printCourseData():
             global course_index
@@ -126,7 +129,8 @@ def run_child():
 
         def taskActiveList(courseId, classId):
             global activeList
-            url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(courseId) + '&classId=' + str(classId) + '&uid=' + uid
+            url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(
+                courseId) + '&classId=' + str(classId) + '&uid=' + uid
             res = requests.get(url, headers=header)
             data = json.loads(res.text)
             activeList = data['activeList']
@@ -188,7 +192,7 @@ def run_child():
         backClassData()
 
 
-def run_parent():
+def listenThread():
     myprint("主程序启动")
 
     child_process = None
@@ -205,7 +209,7 @@ def run_parent():
 
         if running and child_process is None:
             myprint("监听开始\n")
-            child_process = multiprocessing.Process(target=run_child)
+            child_process = multiprocessing.Process(target=signThread)
             child_process.start()
 
         if not running and child_process is not None:
@@ -218,4 +222,4 @@ def run_parent():
 
 
 if __name__ == '__main__':
-    run_parent()
+    listenThread()
