@@ -48,7 +48,7 @@ def myprint(string):
 
 
 def getCookies():
-    myprint('need new cookies, will re-login')
+    myprint('正在登录，获取新Cookie')
     if username and password:
         global cookie
         url = 'https://passport2-api.chaoxing.com/v11/loginregister'
@@ -63,10 +63,10 @@ def getCookies():
         if cookie_str:
             with open(COOKIE_FILENAME, 'w', encoding='utf-8')as file:
                 file.write(cookie_str)
+            myprint('Cookie获取成功')
 
     else:
         myprint('plz edit username and password in this python file')
-
 
 if os.path.exists(COOKIE_FILENAME):
     with open(COOKIE_FILENAME, 'r', encoding='utf-8') as f:
@@ -83,7 +83,6 @@ coursedata = []
 activeList = []
 course_index = 0
 status = 0
-status2 = 0
 activates = []
 
 header = {
@@ -120,13 +119,10 @@ def signThread():
                 printCourseData()
 
         def printCourseData():
-            global course_index
-            index = 1
-            for item in coursedata:
-                print(str(index) + "." + item['name'])
-                index += 1
+            for index, item in enumerate(coursedata):
+                print(str(index + 1) + "." + item['name'])
             startSign()
-
+            
         def taskActiveList(courseId, classId):
             global activeList
             url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(
@@ -165,30 +161,30 @@ def signThread():
                 myprint(course_name + ": 签到成功！")
                 activates.append(aid)
                 status = 2
+            elif res.text == '您已签到过了':
+                myprint(course_name + ': 您已签到过了')
+                activates.append(aid)
+                status = 2
             else:
                 myprint(course_name + "签到失败")
                 activates.append(aid)
 
         def startSign():
-            global status, status2
+            global status
             status = 1
-            status2 = 1
-            ind = 1
-            while status != 0 and status2 != 0:
-                while True:
-                    course_index = 0
-                    print('\n')
-                    for item in coursedata:
-                        ind += 1
-                        course = coursedata[course_index]
-                        taskActiveList(course['courseid'], course['classid'])
-                        course_index += 1
-                        myprint('正在监听: ' + str(course['name']))
-                        sleep(3.7)
-                    sleep(random.randint(37, 88))
-            myprint("任务结束")
-            printdata()
-
+            while status != 0:
+                print('\n')
+                for item in coursedata:
+                    myprint('正在监听: ' + str(item['name']))
+                    taskActiveList(item['courseid'], item['classid'])
+                    sleep(3.7)
+                    if status == 2:
+                        break
+                if status == 2:
+                    break
+                sleep(random.randint(37, 88))
+            myprint('本时间段任务结束\n')
+            
         backClassData()
 
 
