@@ -9,18 +9,18 @@ import json
 import requests
 
 # debug为真，则全天运行本脚本，方便调试。debug为假，则仅上课时运行
-debug = False
+debug = True
 
 # ！！！请填写下面6个参数
 # 填写用户名和密码，以便登录
-username = ''
-password = ''
+username = '17628021863'
+password = 'fjy121032920'
 # uid为用户id
-uid = ''
+uid = '118326091'
 # 此三项为签到参数，经纬度和真实姓名
 latitude = '-1'
 longitude = '-1'
-name = ''
+name = '冯峻源'
 clientip = ''
 signuseragent = ''
 
@@ -63,10 +63,11 @@ def getCookies():
         if cookie_str:
             with open(COOKIE_FILENAME, 'w', encoding='utf-8')as file:
                 file.write(cookie_str)
-            myprint('Cookie获取成功')
+                myprint('获取Cookie成功')
 
     else:
         myprint('plz edit username and password in this python file')
+
 
 if os.path.exists(COOKIE_FILENAME):
     with open(COOKIE_FILENAME, 'r', encoding='utf-8') as f:
@@ -83,6 +84,7 @@ coursedata = []
 activeList = []
 course_index = 0
 status = 0
+status2 = 0
 activates = []
 
 header = {
@@ -99,11 +101,10 @@ def signThread():
             url = 'http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1'
             while not cdata:
                 res = requests.get(url, headers=header)
-                if not res.status_code == 200:
+                cdata = json.loads(res.content.decode('utf-8'))
+                if not cdata:
                     getCookies()
                     continue
-                cdata = json.loads(res.content.decode('utf-8'))
-
                 if cdata['result'] != 1:
                     myprint("课程列表获取失败")
                     return 0
@@ -119,17 +120,18 @@ def signThread():
                 printCourseData()
 
         def printCourseData():
+            global course_index
             for index, item in enumerate(coursedata):
                 print(str(index + 1) + "." + item['name'])
             startSign()
-            
+
         def taskActiveList(courseId, classId):
             global activeList
             url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(
                 courseId) + '&classId=' + str(classId) + '&uid=' + uid
             res = requests.get(url, headers=header)
-            data = json.loads(res.text)
-            activeList = data['activeList']
+            data_json = json.loads(res.text)
+            activeList = data_json['activeList']
             for item in activeList:
                 if "nameTwo" not in item:
                     continue
@@ -137,8 +139,8 @@ def signThread():
                     signurl = item['url']
                     aid = getVar(signurl)
                     if aid not in activates:
-                        myprint("查询到待签到活动 名称:%s 状态:%s 时间:%s aid:%s" % (
-                            item['nameOne'], item['nameTwo'], item['nameFour'], aid))
+                        myprint("待签到活动 名称:%s 状态:%s 时间:%s " % (
+                            item['nameOne'], item['nameTwo'], item['nameFour']))
                         sign(aid, uid, courseId)
 
         def getVar(url):
@@ -166,25 +168,26 @@ def signThread():
                 activates.append(aid)
                 status = 2
             else:
-                myprint(course_name + "签到失败")
+                myprint(course_name + '签到失败')
                 activates.append(aid)
 
         def startSign():
-            global status
+            global status, status2
             status = 1
-            while status != 0:
-                print('\n')
-                for item in coursedata:
-                    myprint('正在监听: ' + str(item['name']))
-                    taskActiveList(item['courseid'], item['classid'])
-                    sleep(3.7)
-                    if status == 2:
-                        break
-                if status == 2:
-                    break
-                sleep(random.randint(37, 88))
-            myprint('本时间段任务结束\n')
-            
+            status2 = 1
+            while status != 0 and status2 != 0:
+                while True:
+                    print('\n')
+                    for item in coursedata:
+                        myprint('正在监听: ' + str(item['name']))
+                        taskActiveList(item['courseid'], item['classid'])
+                        sleep(3.7)
+                        if status == 2:
+                            sleep(60*10)
+                    sleep(random.randint(37, 88))
+            myprint("任务结束")
+            printdata()
+
         backClassData()
 
 
@@ -219,3 +222,4 @@ def listenThread():
 
 if __name__ == '__main__':
     listenThread()
+
