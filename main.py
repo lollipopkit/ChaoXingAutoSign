@@ -13,34 +13,30 @@ debug = False
 
 # ！！！请填写下面6个参数
 # 填写用户名和密码，以便登录
-username = ''
-password = ''
+username = '17628021863'
+password = 'fjy121032920'
 # uid为用户id
-uid = ''
+uid = '118326091'
 # 此三项为签到参数，经纬度和真实姓名
 latitude = '-1'
 longitude = '-1'
-name = ''
+name = '冯峻源'
 clientip = ''
 signuseragent = ''
 
+# 不需要修改
 useragent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766'
 cookie = ''
 encode_name = parse.quote(name)
 COOKIE_FILENAME = 'chaoxing_cookies'
 
-# 第一节课
-CLASS_ONE_START = time(7, 55)
-CLASS_ONE_END = time(8, 15)
-# 第二节课
-CLASS_TWO_START = time(10, 0)
-CLASS_TWO_END = time(10, 20)
-# 第三节课
-CLASS_THREE_START = time(13, 30)
-CLASS_THREE_END = time(13, 50)
-# 第四节课
-CLASS_FOUR_START = time(15, 30)
-CLASS_FOUR_END = time(15, 46)
+# 每次课的上课时间
+start_time = {
+    time(7, 55),
+    time(9, 55),
+    time(13, 25),
+    time(1, 30),
+}
 
 
 def myprint(string):
@@ -52,9 +48,9 @@ def getCookies():
     if username and password:
         global cookie
         url = 'https://passport2-api.chaoxing.com/v11/loginregister'
-        rdata = {'uname': username, 'code': password, }
+        data = {'uname': username, 'code': password, }
         session = requests.session()
-        cookie_jar = session.post(url=url, data=rdata, headers={'User-Agent': useragent}).cookies
+        cookie_jar = session.post(url=url, data=data, headers={'User-Agent': useragent}).cookies
         cookie_dict = requests.utils.dict_from_cookiejar(cookie_jar)
         cookie_str = ''
         for key in cookie_dict:
@@ -79,24 +75,19 @@ if os.path.exists(COOKIE_FILENAME):
 else:
     getCookies()
 
-# 初始化空数据
+should_run = False
 coursedata = []
-activeList = []
-course_index = 0
-status = 0
-status2 = 0
 activates = []
-
 header = {
     "Cookie": cookie,
     "User-Agent": useragent,
 }
 
 
-def signThread():
-    while 1:
+def listenThread():
+    global should_run
+    while should_run:
         def backClassData():
-            global coursedata
             cdata = {}
             url = 'http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1'
             while not cdata:
@@ -107,7 +98,8 @@ def signThread():
                     continue
                 if cdata['result'] != 1:
                     myprint("课程列表获取失败")
-                    return 0
+                    sleep(10)
+                    continue
                 for item in cdata['channelList']:
                     if "course" not in item['content']:
                         continue
@@ -120,13 +112,12 @@ def signThread():
                 printCourseData()
 
         def printCourseData():
-            global course_index
+            global coursedata
             for index, item in enumerate(coursedata):
                 print(str(index + 1) + "." + item['name'])
             startSign()
 
         def taskActiveList(courseId, classId):
-            global activeList
             url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(
                 courseId) + '&classId=' + str(classId) + '&uid=' + uid
             res = requests.get(url, headers=header)
@@ -152,8 +143,14 @@ def signThread():
             return "notfound"
 
         def sign(aid, uid, courseid):
-            global status, activates
-            url = 'https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=' + aid + '&uid=' + uid + '&clientip=' + clientip + '&useragent=' + signuseragent + '&latitude=' + latitude + '&longitude=' + longitude + '&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785&name=' + encode_name
+            global should_run, activates
+            url = 'https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=' \
+                  + aid + '&uid=' + \
+                  uid + '&clientip=' \
+                  + clientip + '&useragent=' \
+                  + signuseragent + '&latitude=' \
+                  + latitude + '&longitude=' \
+                  + longitude + '&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785&name=' + encode_name
             res = requests.get(url, headers=header)
             course_name = ''
             for item in coursedata:
@@ -162,64 +159,61 @@ def signThread():
             if res.text == "success":
                 myprint(course_name + ": 签到成功！")
                 activates.append(aid)
-                status = 2
+                should_run = False
             elif res.text == '您已签到过了':
                 myprint(course_name + ': 您已签到过了')
                 activates.append(aid)
-                status = 2
+                should_run = False
             else:
                 myprint(course_name + '签到失败')
                 activates.append(aid)
 
         def startSign():
-            global status, status2
-            status = 1
-            status2 = 1
-            while status != 0 and status2 != 0:
-                while True:
-                    print('\n')
-                    for item in coursedata:
-                        myprint('正在监听: ' + str(item['name']))
-                        taskActiveList(item['courseid'], item['classid'])
-                        sleep(3.7)
-                        if status == 2:
-                            sleep(60*10)
+            global should_run
+            while should_run:
+                print('\n')
+                for item in coursedata:
+                    myprint('正在监听: ' + str(item['name']))
+                    taskActiveList(item['courseid'], item['classid'])
+                    sleep(3.7)
+                    if not should_run:
+                        break
+                if not should_run:
                     sleep(random.randint(37, 88))
             myprint("任务结束")
-            printdata()
 
         backClassData()
 
 
-def listenThread():
+def listen():
     myprint("主程序启动")
-
     child_process = None
+    global should_run
 
     while True:
-        current_time = datetime.now().time()
+        current_time = datetime.now().strftime('%H:%M')
         if debug:
-            running = True
+            should_run = True
         else:
-            running = False
+            should_run = False
 
-        if CLASS_ONE_START <= current_time <= CLASS_ONE_END or CLASS_TWO_START <= current_time <= CLASS_TWO_END or CLASS_THREE_START <= current_time <= CLASS_THREE_END or CLASS_FOUR_START <= current_time <= CLASS_FOUR_END:
-            running = True
+        for item in start_time:
+            if str(item)[:-3] == current_time:
+                should_run = True
 
-        if running and child_process is None:
+        if should_run and child_process is None:
             myprint("监听开始\n")
-            child_process = multiprocessing.Process(target=signThread)
+            child_process = multiprocessing.Process(target=listenThread)
             child_process.start()
 
-        if not running and child_process is not None:
+        if not should_run and child_process is not None:
             myprint("监听结束\n")
             child_process.terminate()
             child_process.join()
             child_process = None
 
-        sleep(60)
+        sleep(50)
 
 
 if __name__ == '__main__':
-    listenThread()
-
+    listen()
