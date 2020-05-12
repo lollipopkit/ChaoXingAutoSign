@@ -13,14 +13,14 @@ debug = True
 
 # ！！！请填写下面6个参数
 # 填写用户名和密码，以便登录
-username = '17628021863'
-password = 'fjy121032920'
+username = ''
+password = ''
 # uid为用户id
-uid = '118326091'
+uid = ''
 # 此三项为签到参数，经纬度和真实姓名
 latitude = '-1'
 longitude = '-1'
-name = '冯峻源'
+name = ''
 clientip = ''
 signuseragent = ''
 
