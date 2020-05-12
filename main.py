@@ -9,7 +9,7 @@ import json
 import requests
 
 # debug为真，则全天运行本脚本，方便调试。debug为假，则仅上课时运行
-debug = True
+debug = False
 
 # ！！！请填写下面6个参数
 # 填写用户名和密码，以便登录
