@@ -150,7 +150,7 @@ def listenThread():
                   + clientip + '&useragent=' \
                   + signuseragent + '&latitude=' \
                   + latitude + '&longitude=' \
-                  + longitude + '&appType=15&fid=2378&objectId=bafc13f7a93ce7b8f745c913d58f1785&name=' + encode_name
+                  + longitude + '&appType=15&fid=2378&objectId=a58cb2acedf5fa10d2ad2fc421fb7d30&name=' + encode_name
             res = requests.get(url, headers=header)
             course_name = ''
             for item in coursedata:
