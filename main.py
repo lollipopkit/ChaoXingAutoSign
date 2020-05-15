@@ -35,7 +35,7 @@ start_time = {
     time(7, 55),
     time(9, 55),
     time(13, 25),
-    time(1, 30),
+    time(15, 25),
 }
 
 
@@ -92,7 +92,11 @@ def listenThread():
             url = 'http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1'
             while not cdata:
                 res = requests.get(url, headers=header)
-                cdata = json.loads(res.content.decode('utf-8'))
+                res_data = res.text
+                if '请重新登录' in res_data:
+                    getCookies()
+                    continue
+                cdata = json.loads(res_data)
                 if not cdata:
                     getCookies()
                     continue
