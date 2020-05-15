@@ -26,9 +26,8 @@ signuseragent = ''
 
 # 不需要修改
 useragent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766'
-cookie = ''
 encode_name = parse.quote(name)
-COOKIE_FILENAME = 'chaoxing_cookies'
+cookie = ''
 
 # 每次课的上课时间
 start_time = {
@@ -56,42 +55,29 @@ def getCookies():
         for key in cookie_dict:
             cookie_str += key + '=' + cookie_dict[key] + '; '
         cookie = cookie_str
-        if cookie_str:
-            with open(COOKIE_FILENAME, 'w', encoding='utf-8')as file:
-                file.write(cookie_str)
-                myprint('获取Cookie成功')
-
     else:
         myprint('plz edit username and password in this python file')
 
 
-if os.path.exists(COOKIE_FILENAME):
-    with open(COOKIE_FILENAME, 'r', encoding='utf-8') as f:
-        data = f.read().strip()
-        if data:
-            cookie = data
-        else:
-            getCookies()
-else:
-    getCookies()
-
 should_run = False
 coursedata = []
 activates = []
-header = {
-    "Cookie": cookie,
-    "User-Agent": useragent,
-}
+
+
+def getHeader():
+    global cookie
+    return {"Cookie": cookie, "User-Agent": useragent}
 
 
 def listenThread():
     global should_run
+    getCookies()
     while should_run:
         def backClassData():
             cdata = {}
             url = 'http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1'
             while not cdata:
-                res = requests.get(url, headers=header)
+                res = requests.get(url, headers=getHeader())
                 res_data = res.text
                 if '请重新登录' in res_data:
                     getCookies()
@@ -124,7 +110,7 @@ def listenThread():
         def taskActiveList(courseId, classId):
             url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(
                 courseId) + '&classId=' + str(classId) + '&uid=' + uid
-            res = requests.get(url, headers=header)
+            res = requests.get(url, headers=getHeader())
             data_json = json.loads(res.text)
             activeList = data_json['activeList']
             for item in activeList:
@@ -155,7 +141,7 @@ def listenThread():
                   + signuseragent + '&latitude=' \
                   + latitude + '&longitude=' \
                   + longitude + '&appType=15&fid=2378&objectId=a58cb2acedf5fa10d2ad2fc421fb7d30&name=' + encode_name
-            res = requests.get(url, headers=header)
+            res = requests.get(url, headers=getHeader())
             course_name = ''
             for item in coursedata:
                 if item['courseid'] == courseid:
