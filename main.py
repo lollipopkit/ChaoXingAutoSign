@@ -34,7 +34,7 @@ start_time = {
     time(7, 55),
     time(9, 55),
     time(13, 25),
-    time(15, 25),
+    time(15, 50),
 }
 
 
@@ -55,6 +55,7 @@ def getCookies():
         for key in cookie_dict:
             cookie_str += key + '=' + cookie_dict[key] + '; '
         cookie = cookie_str
+        myprint('获取Cookie成功')
     else:
         myprint('plz edit username and password in this python file')
 
@@ -168,7 +169,7 @@ def listenThread():
                     sleep(3.7)
                     if not should_run:
                         break
-                if not should_run:
+                if should_run:
                     sleep(random.randint(37, 88))
             myprint("任务结束")
 
@@ -179,13 +180,13 @@ def listen():
     myprint("主程序启动")
     child_process = None
     global should_run
+    if debug:
+        should_run = True
+    else:
+        should_run = False
 
     while True:
         current_time = datetime.now().strftime('%H:%M')
-        if debug:
-            should_run = True
-        else:
-            should_run = False
 
         for item in start_time:
             if str(item)[:-3] == current_time:
