@@ -24,11 +24,6 @@ name = ''
 clientip = ''
 signuseragent = ''
 
-# 不需要修改
-useragent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766'
-encode_name = parse.quote(name)
-cookie = ''
-
 # 每次课的上课时间
 start_time = {
     time(7, 55),
@@ -36,6 +31,13 @@ start_time = {
     time(13, 25),
     time(15, 50),
 }
+# 星期几上课，特殊：星期天是0
+start_day = [1, 2, 3, 4, 5]
+
+# 从这里开始不需要修改
+useragent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766'
+encode_name = parse.quote(name)
+cookie = ''
 
 
 def myprint(string):
@@ -187,10 +189,12 @@ def listen():
 
     while True:
         current_time = datetime.now().strftime('%H:%M')
+        weekday = datetime.now().strftime('%w')
 
-        for item in start_time:
-            if str(item)[:-3] == current_time:
-                should_run = True
+        if weekday in start_day:
+            for item in start_time:
+                if str(item)[:-3] == current_time:
+                    should_run = True
 
         if should_run and child_process is None:
             myprint("监听开始\n")
