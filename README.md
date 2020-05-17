@@ -1,5 +1,9 @@
 # ChaoXingAutoSign
-超星学习通自动登录、签到
+超星学习通**自动登录、签到**
+
+
+## 20.5.17
+周末自动暂停运行脚本，有需求请修改`start_day`参数
 
 
 ## 20.5.16
@@ -20,4 +24,4 @@
 thanks to author 7z
 
 
-@Github LollipopKit MIT license
+@LollipopKit MIT license
