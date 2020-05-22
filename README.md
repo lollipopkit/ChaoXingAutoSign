@@ -1,6 +1,10 @@
 # ChaoXingAutoSign
 超星学习通**自动登录、签到**
 
+## 20.5.22
+新增`listen_time`参数，可设置每次监听时长
+`except JSONDeoderError`，强化cookie失效策略
+
 
 ## 20.5.17
 周末自动暂停运行脚本，有需求请修改`start_day`参数
