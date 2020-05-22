@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import multiprocessing
 import random
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from time import sleep
 import os
 from urllib import parse
@@ -31,6 +31,8 @@ start_time = {
     time(13, 25),
     time(15, 50),
 }
+# 监听时长，例如设为20，就从每次上课开始监听20分钟
+listen_time = 20
 # 星期几上课，特殊：星期天是0
 start_day = [1, 2, 3, 4, 5]
 
@@ -85,7 +87,11 @@ def listenThread():
                 if '请重新登录' in res_data:
                     getCookies()
                     continue
-                cdata = json.loads(res_data)
+                try:
+                    cdata = json.loads(res_data)
+                except json.JSONDecodeError:
+                    getCookies()
+                    continue
                 if not cdata:
                     getCookies()
                     continue
@@ -152,10 +158,12 @@ def listenThread():
             if res.text == "success":
                 myprint(course_name + ": 签到成功！")
                 activates.append(aid)
+                sleep(60)
                 should_run = False
             elif res.text == '您已签到过了':
                 myprint(course_name + ': 您已签到过了')
                 activates.append(aid)
+                sleep(60)
                 should_run = False
             else:
                 myprint(course_name + '签到失败')
@@ -192,9 +200,12 @@ def listen():
         weekday = datetime.now().strftime('%w')
 
         if int(weekday) in start_day:
+            myprint(current_time)
             for item in start_time:
                 if str(item)[:-3] == current_time:
                     should_run = True
+                if str(item + timedelta(minutes=listen_time)) == current_time:
+                    should_run = False
 
         if should_run and child_process is None:
             myprint("监听开始\n")
@@ -207,7 +218,7 @@ def listen():
             child_process.join()
             child_process = None
 
-        sleep(50)
+        sleep(10)
 
 
 if __name__ == '__main__':
