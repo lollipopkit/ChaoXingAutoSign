@@ -200,7 +200,6 @@ def listen():
         weekday = datetime.now().strftime('%w')
 
         if int(weekday) in start_day:
-            myprint(current_time)
             for item in start_time:
                 if str(item)[:-3] == current_time:
                     should_run = True
