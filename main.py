@@ -3,6 +3,7 @@ import multiprocessing
 import random
 from datetime import datetime, time, timedelta
 from time import sleep
+from time import time as times
 import os
 from urllib import parse
 import json
@@ -11,13 +12,13 @@ import requests
 # debug为真，则全天运行本脚本，方便调试。debug为假，则仅上课时运行
 debug = False
 
-# ！！！请填写下面6个参数
+# ！！！请填写下面的参数
 # 填写用户名和密码，以便登录
 username = ''
 password = ''
 # uid为用户id
 uid = ''
-# 此三项为签到参数，经纬度和真实姓名
+# 此五项为签到参数，经纬度和真实姓名
 latitude = '-1'
 longitude = '-1'
 name = ''
@@ -67,6 +68,7 @@ def getCookies():
 should_run = False
 coursedata = []
 activates = []
+timestamp: float = 0
 
 
 def getHeader():
@@ -189,7 +191,7 @@ def listenThread():
 def listen():
     myprint("主程序启动")
     child_process = None
-    global should_run
+    global should_run, timestamp
     if debug:
         should_run = True
     else:
@@ -202,8 +204,9 @@ def listen():
         if int(weekday) in start_day:
             for item in start_time:
                 if str(item)[:-3] == current_time:
+                    timestamp = times()
                     should_run = True
-                if str(item + timedelta(minutes=listen_time)) == current_time:
+                if should_run and times() - timestamp > 60*listen_time:
                     should_run = False
 
         if should_run and child_process is None:
