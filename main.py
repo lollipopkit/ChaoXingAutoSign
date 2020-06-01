@@ -9,8 +9,6 @@ from urllib import parse
 import json
 import requests
 
-# debug为真，则全天运行本脚本，方便调试。debug为假，则仅上课时运行
-debug = False
 
 # ！！！请填写下面的参数
 # 填写用户名和密码，以便登录
@@ -18,12 +16,14 @@ username = ''
 password = ''
 # uid为用户id
 uid = ''
-# 此五项为签到参数，经纬度和真实姓名
+# 此三项为签到参数，经纬度和真实姓名
 latitude = '-1'
 longitude = '-1'
 name = ''
 clientip = ''
 signuseragent = ''
+# 图片签到所需要的objectId，此项并非必须修改，具体ID可抓包获得
+objectId = 'a58cb2acedf5fa10d2ad2fc421fb7d30'
 
 # 每次课的上课时间
 start_time = {
@@ -40,7 +40,10 @@ start_day = [1, 2, 3, 4, 5]
 # 从这里开始不需要修改
 useragent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766 ChaoXingStudy/ChaoXingStudy_3_4.4.1_ios_phone_202004111750_39 (@Kalimdor)_4375872153618237766'
 encode_name = parse.quote(name)
-cookie = ''
+header = {
+    "Cookie": '',
+    "User-Agent": useragent
+}
 
 
 def myprint(string):
@@ -50,16 +53,18 @@ def myprint(string):
 def getCookies():
     myprint('正在登录，获取新Cookie')
     if username and password:
-        global cookie
         url = 'https://passport2-api.chaoxing.com/v11/loginregister'
-        data = {'uname': username, 'code': password, }
+        data = {
+            'uname': username,
+            'code': password
+        }
         session = requests.session()
         cookie_jar = session.post(url=url, data=data, headers={'User-Agent': useragent}).cookies
         cookie_dict = requests.utils.dict_from_cookiejar(cookie_jar)
         cookie_str = ''
         for key in cookie_dict:
             cookie_str += key + '=' + cookie_dict[key] + '; '
-        cookie = cookie_str
+        header['Cookie'] = cookie_str
         myprint('获取Cookie成功')
     else:
         myprint('plz edit username and password in this python file')
@@ -71,11 +76,6 @@ activates = []
 timestamp: float = 0
 
 
-def getHeader():
-    global cookie
-    return {"Cookie": cookie, "User-Agent": useragent}
-
-
 def listenThread():
     global should_run
     getCookies()
@@ -84,7 +84,7 @@ def listenThread():
             cdata = {}
             url = 'http://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&rss=1'
             while not cdata:
-                res = requests.get(url, headers=getHeader())
+                res = requests.get(url, headers=header)
                 res_data = res.text
                 if '请重新登录' in res_data:
                     getCookies()
@@ -92,6 +92,7 @@ def listenThread():
                 try:
                     cdata = json.loads(res_data)
                 except json.JSONDecodeError:
+                    myprint('Cookie已失效，将重新获取')
                     getCookies()
                     continue
                 if not cdata:
@@ -119,9 +120,11 @@ def listenThread():
             startSign()
 
         def taskActiveList(courseId, classId):
-            url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?courseId=' + str(
-                courseId) + '&classId=' + str(classId) + '&uid=' + uid
-            res = requests.get(url, headers=getHeader())
+            url = 'https://mobilelearn.chaoxing.com/ppt/activeAPI/taskactivelist?' \
+                  'courseId=' + str(courseId) + \
+                  '&classId=' + str(classId) + \
+                  '&uid=' + uid
+            res = requests.get(url, headers=header)
             data_json = json.loads(res.text)
             activeList = data_json['activeList']
             for item in activeList:
@@ -145,14 +148,17 @@ def listenThread():
 
         def sign(aid, uid, courseid):
             global should_run, activates
-            url = 'https://mobilelearn.chaoxing.com/pptSign/stuSignajax?activeId=' \
-                  + aid + '&uid=' + \
-                  uid + '&clientip=' \
-                  + clientip + '&useragent=' \
-                  + signuseragent + '&latitude=' \
-                  + latitude + '&longitude=' \
-                  + longitude + '&appType=15&fid=2378&objectId=a58cb2acedf5fa10d2ad2fc421fb7d30&name=' + encode_name
-            res = requests.get(url, headers=getHeader())
+            url = 'https://mobilelearn.chaoxing.com/pptSign/stuSignajax?' \
+                  'activeId=' + aid + \
+                  '&uid=' + uid + \
+                  '&clientip=' + clientip + \
+                  '&useragent=' + signuseragent +\
+                  '&latitude=' + latitude + \
+                  '&longitude=' + longitude + \
+                  '&appType=15&fid=2378' \
+                  '&objectId=' + objectId + \
+                  '&name=' + encode_name
+            res = requests.get(url, headers=header)
             course_name = ''
             for item in coursedata:
                 if item['courseid'] == courseid:
@@ -192,10 +198,6 @@ def listen():
     myprint("主程序启动")
     child_process = None
     global should_run, timestamp
-    if debug:
-        should_run = True
-    else:
-        should_run = False
 
     while True:
         current_time = datetime.now().strftime('%H:%M')
@@ -206,7 +208,7 @@ def listen():
                 if str(item)[:-3] == current_time:
                     timestamp = times()
                     should_run = True
-                if should_run and times() - timestamp > 60*listen_time:
+                if should_run and times() - timestamp > 60 * listen_time:
                     should_run = False
 
         if should_run and child_process is None:
@@ -224,4 +226,7 @@ def listen():
 
 
 if __name__ == '__main__':
-    listen()
+    try:
+        listen()
+    except KeyboardInterrupt:
+        myprint('主动停止运行')
